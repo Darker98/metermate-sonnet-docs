@@ -15,3 +15,13 @@ export function getSessionId(): string {
   }
   return id;
 }
+
+const LAST_TXN_KEY = "metermate_last_txn_id";
+
+export function saveLastTxnId(txnId: string): void {
+  localStorage.setItem(LAST_TXN_KEY, txnId);
+}
+
+export function getLastTxnId(): string {
+  return localStorage.getItem(LAST_TXN_KEY) ?? "";
+}

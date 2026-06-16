@@ -7,7 +7,7 @@ import {
   type Product,
   type BookResponse,
 } from "../../api.js";
-import { getSessionId } from "../../session.js";
+import { getSessionId, saveLastTxnId } from "../../session.js";
 
 function formatMrr(centsStr: string): string {
   const dollars = parseInt(centsStr, 10) / 100;
@@ -66,6 +66,7 @@ export default function BookForm() {
         couponCode: couponCode.trim() || undefined,
       });
       setResult(res);
+      if (res.status === "ok" && res.txnId) saveLastTxnId(res.txnId);
     } catch (err) {
       setResult({ status: "maxio_failed", error: String(err) });
     } finally {

@@ -72,3 +72,32 @@ export interface BookResponse {
 export async function bookSubscription(payload: BookPayload): Promise<BookResponse> {
   return post<BookResponse>("/book", payload);
 }
+
+// ── UC2: Report Usage ────────────────────────────────────────────────────────
+
+export interface UsagePayload {
+  sessionId: string;
+  txnRef: string;
+  componentHandle: string;
+  quantity: number;
+  memo?: string;
+  timestamp?: string;
+}
+
+export type UsageStatus = "ok" | "maxio_failed" | "invalid" | "session_expired";
+
+export interface UsageResponse {
+  status: UsageStatus;
+  txnId?: string;
+  channelId?: string;
+  channelName?: string;
+  usageId?: string;
+  quantity?: number;
+  periodTotal?: number;
+  componentHandle?: string;
+  error?: string | Record<string, unknown>;
+}
+
+export async function reportUsage(payload: UsagePayload): Promise<UsageResponse> {
+  return post<UsageResponse>("/usage", payload);
+}

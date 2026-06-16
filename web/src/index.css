@@ -291,6 +291,43 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Client nav tabs ───────────────────────────────────────── */
+.client-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e8ecf0;
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.client-nav button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7a99;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.client-nav button:hover:not(:disabled) {
+  color: #344563;
+}
+
+.client-nav button.active {
+  color: #4c6ef5;
+  border-bottom-color: #4c6ef5;
+}
+
+.client-nav button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
 /* ── Placeholder ───────────────────────────────────────────── */
 .placeholder {
   display: flex;

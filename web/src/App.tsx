@@ -1,10 +1,20 @@
 import { useState } from "react";
 import BookForm from "./components/client/BookForm.js";
+import UsageForm from "./components/client/UsageForm.js";
 
-type Role = "client" | "admin";
+type Role      = "client" | "admin";
+type ClientTab = "book" | "usage" | "plan-change" | "lifecycle";
+
+const CLIENT_TABS: { id: ClientTab; label: string; available: boolean }[] = [
+  { id: "book",        label: "Book & Subscribe",  available: true  },
+  { id: "usage",       label: "Report Usage",       available: true  },
+  { id: "plan-change", label: "Plan Change",        available: false },
+  { id: "lifecycle",   label: "Lifecycle",          available: false },
+];
 
 export default function App() {
-  const [role, setRole] = useState<Role>("client");
+  const [role, setRole]         = useState<Role>("client");
+  const [clientTab, setClientTab] = useState<ClientTab>("book");
 
   return (
     <div className="shell">
@@ -30,7 +40,30 @@ export default function App() {
       </header>
 
       <main className="main">
-        {role === "client" && <BookForm />}
+        {role === "client" && (
+          <div style={{ width: "100%", maxWidth: 680 }}>
+            <nav className="client-nav">
+              {CLIENT_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  className={clientTab === tab.id ? "active" : ""}
+                  disabled={!tab.available}
+                  onClick={() => setClientTab(tab.id)}
+                  title={!tab.available ? "Coming in a future use case" : undefined}
+                >
+                  {tab.label}
+                  {!tab.available && (
+                    <span style={{ marginLeft: 4, fontSize: "0.68rem", opacity: 0.6 }}>soon</span>
+                  )}
+                </button>
+              ))}
+            </nav>
+
+            {clientTab === "book"  && <BookForm />}
+            {clientTab === "usage" && <UsageForm />}
+          </div>
+        )}
+
         {role === "admin" && (
           <div className="card">
             <div className="card-header">

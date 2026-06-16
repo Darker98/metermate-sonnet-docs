@@ -181,3 +181,48 @@ export interface LifecycleResponse {
 export async function triggerLifecycle(payload: LifecyclePayload): Promise<LifecycleResponse> {
   return post<LifecycleResponse>("/lifecycle", payload);
 }
+
+// ── UC5: Invoice Issue + Send ─────────────────────────────────────────────────
+
+export interface InvoiceLineItem {
+  title: string;
+  quantity: string;
+  unitPrice: string;
+  description?: string;
+}
+
+export interface InvoicePayload {
+  sessionId: string;
+  txnRef: string;
+  lineItems?: InvoiceLineItem[];
+  memo?: string;
+  sendEmail: boolean;
+  adminUser: string;
+  adminPassword: string;
+}
+
+export type InvoiceStatus = "ok" | "maxio_failed" | "invalid" | "session_expired";
+
+export interface InvoiceResponse {
+  status: InvoiceStatus;
+  txnId?: string;
+  channelId?: string;
+  channelName?: string;
+  invoiceUid?: string;
+  invoiceNumber?: string;
+  invoiceStatus?: string;
+  totalAmount?: string;
+  dueAmount?: string;
+  dueDate?: string;
+  publicUrl?: string | null;
+  emailSent?: boolean;
+  error?: string | Record<string, unknown>;
+}
+
+export async function issueInvoice(payload: InvoicePayload): Promise<InvoiceResponse> {
+  const { adminUser, adminPassword, ...body } = payload;
+  const encoded = btoa(`${adminUser}:${adminPassword}`);
+  return post<InvoiceResponse>("/invoices", body, {
+    Authorization: `Basic ${encoded}`,
+  });
+}

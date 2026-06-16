@@ -328,6 +328,87 @@ body {
   cursor: not-allowed;
 }
 
+/* ── Admin nav tabs ────────────────────────────────────────── */
+.admin-nav {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e8ecf0;
+  margin-bottom: 1.5rem;
+}
+
+.admin-nav button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #6b7a99;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.admin-nav button:hover {
+  color: #344563;
+}
+
+.admin-nav button.active {
+  color: #4c6ef5;
+  border-bottom-color: #4c6ef5;
+}
+
+/* ── Line items table ──────────────────────────────────────── */
+.line-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.line-items-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7a99;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 0.4rem 0.4rem;
+}
+
+.line-items-table td {
+  padding: 0.3rem 0.4rem;
+}
+
+.line-items-table td input {
+  width: 100%;
+  border: 1.5px solid #dfe1e6;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.82rem;
+  color: #172b4d;
+  outline: none;
+}
+
+.line-items-table td input:focus {
+  border-color: #4c6ef5;
+}
+
+.btn-small {
+  background: transparent;
+  border: 1.5px solid #dfe1e6;
+  border-radius: 5px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.78rem;
+  color: #5e6c84;
+  cursor: pointer;
+}
+
+.btn-small:hover { border-color: #b3bac5; }
+.btn-small.danger { color: #e5534b; border-color: #e5534b; }
+.btn-small.danger:hover { background: #ffebe9; }
+
 /* ── Placeholder ───────────────────────────────────────────── */
 .placeholder {
   display: flex;

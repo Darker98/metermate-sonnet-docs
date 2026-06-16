@@ -111,6 +111,65 @@ export function buildUsageCompleteBlocks(result: {
   ];
 }
 
+// ── UC3 ─────────────────────────────────────────────────────────────────────
+
+export function buildPlanChangePreviewBlocks(result: {
+  fromPlan: string;
+  toPlan: string;
+  timing: string;
+  proratedAdjustmentInCents: bigint;
+  chargeInCents: bigint;
+  paymentDueInCents: bigint;
+  creditAppliedInCents: bigint;
+}): Block[] {
+  function fmt(cents: bigint): string {
+    return "$" + (Number(cents) / 100).toFixed(2);
+  }
+  return [
+    {
+      type: "header",
+      text: { type: "plain_text", text: ":mag: Plan change preview", emoji: true },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*From:*\n${result.fromPlan}` },
+        { type: "mrkdwn", text: `*To:*\n${result.toPlan}` },
+        { type: "mrkdwn", text: `*Timing:*\n${result.timing}` },
+        { type: "mrkdwn", text: `*Prorated Adjustment:*\n${fmt(result.proratedAdjustmentInCents)}` },
+        { type: "mrkdwn", text: `*Charge Now:*\n${fmt(result.chargeInCents)}` },
+        { type: "mrkdwn", text: `*Payment Due:*\n${fmt(result.paymentDueInCents)}` },
+        { type: "mrkdwn", text: `*Credit Applied:*\n${fmt(result.creditAppliedInCents)}` },
+      ],
+    },
+  ];
+}
+
+export function buildPlanChangeCompleteBlocks(result: {
+  fromPlan: string;
+  toPlan: string;
+  timing: string;
+  effectiveDate: string;
+  state: string;
+}): Block[] {
+  return [
+    {
+      type: "header",
+      text: { type: "plain_text", text: ":arrows_counterclockwise: Plan changed", emoji: true },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*From:*\n${result.fromPlan}` },
+        { type: "mrkdwn", text: `*To:*\n${result.toPlan}` },
+        { type: "mrkdwn", text: `*Timing:*\n${result.timing}` },
+        { type: "mrkdwn", text: `*Effective:*\n${result.effectiveDate}` },
+        { type: "mrkdwn", text: `*State:*\n${result.state}` },
+      ],
+    },
+  ];
+}
+
 export function buildFailureBlocks(ucLabel: string, errorSummary: string): Block[] {
   return [
     {

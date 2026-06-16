@@ -88,6 +88,7 @@ bookRouter.post("/api/book", async (req, res): Promise<void> => {
     transactionStore.update(txn.txnId, {
       state: "completed",
       subscriptionId: result.subscriptionId,
+      planHandle: result.planHandle,
     });
     sessionStore.put(sessionId, { lastResult: result });
 

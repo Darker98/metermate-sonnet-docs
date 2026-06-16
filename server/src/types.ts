@@ -20,6 +20,7 @@ export interface Transaction {
   type: TxnType;
   state: TxnState;
   subscriptionId?: number;
+  planHandle?: string;
   channelId?: ChannelId;
   channelName?: string;
   createdAt: Date;

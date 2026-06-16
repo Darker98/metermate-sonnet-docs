@@ -2,6 +2,7 @@ import {
   SubscriptionsController,
   ProductsController,
   SubscriptionComponentsController,
+  SubscriptionProductsController,
   CollectionMethod,
   ApiError,
 } from "@maxio-com/advanced-billing-sdk";
@@ -11,6 +12,7 @@ import { maxioClient } from "../maxioClient.js";
 const subscriptionsController = new SubscriptionsController(maxioClient);
 const productsController = new ProductsController(maxioClient);
 const subscriptionComponentsController = new SubscriptionComponentsController(maxioClient);
+const subscriptionProductsController = new SubscriptionProductsController(maxioClient);
 
 export interface CreateSubscriptionParams {
   firstName: string;
@@ -186,6 +188,95 @@ export const maxioService = {
       periodTotal,
       componentHandle: params.componentHandle,
     };
+  },
+
+  async previewPlanChange(params: {
+    subscriptionId: number;
+    targetHandle: string;
+  }): Promise<{
+    proratedAdjustmentInCents: bigint;
+    chargeInCents: bigint;
+    paymentDueInCents: bigint;
+    creditAppliedInCents: bigint;
+  }> {
+    let response;
+    try {
+      response = await subscriptionProductsController.previewSubscriptionProductMigration(
+        params.subscriptionId,
+        { migration: { productHandle: params.targetHandle } },
+      );
+    } catch (err) {
+      throw new Error(extractErrorMessage(err));
+    }
+
+    const m = response.result?.migration;
+    return {
+      proratedAdjustmentInCents: m?.proratedAdjustmentInCents ?? BigInt(0),
+      chargeInCents: m?.chargeInCents ?? BigInt(0),
+      paymentDueInCents: m?.paymentDueInCents ?? BigInt(0),
+      creditAppliedInCents: m?.creditAppliedInCents ?? BigInt(0),
+    };
+  },
+
+  async applyPlanChange(params: {
+    subscriptionId: number;
+    targetHandle: string;
+    timing: "prorate" | "at-renewal";
+  }): Promise<{
+    state: string;
+    planName: string;
+    planHandle: string;
+    nextAssessmentAt: string;
+    nextProductName: string | null;
+  }> {
+    if (params.timing === "prorate") {
+      // Apply immediately with proration
+      let response;
+      try {
+        response = await subscriptionProductsController.migrateSubscriptionProduct(
+          params.subscriptionId,
+          { migration: { productHandle: params.targetHandle } },
+        );
+      } catch (err) {
+        throw new Error(extractErrorMessage(err));
+      }
+      const sub = response.result?.subscription;
+      return {
+        state: sub?.state ?? "unknown",
+        planName: sub?.product?.name ?? params.targetHandle,
+        planHandle: sub?.product?.handle ?? params.targetHandle,
+        nextAssessmentAt: sub?.nextAssessmentAt ?? "",
+        nextProductName: null,
+      };
+    } else {
+      // Schedule at renewal: look up product ID by handle, then set nextProductId
+      let productId: number;
+      try {
+        const pr = await productsController.readProductByHandle(params.targetHandle);
+        productId = pr.result?.product?.id ?? 0;
+        if (!productId) throw new Error(`Product not found for handle: ${params.targetHandle}`);
+      } catch (err) {
+        throw new Error(extractErrorMessage(err));
+      }
+
+      let response;
+      try {
+        response = await subscriptionsController.updateSubscription(
+          params.subscriptionId,
+          { subscription: { nextProductId: String(productId) } },
+        );
+      } catch (err) {
+        throw new Error(extractErrorMessage(err));
+      }
+      const sub = response.result?.subscription;
+      return {
+        state: sub?.state ?? "unknown",
+        planName: sub?.product?.name ?? params.targetHandle,
+        planHandle: sub?.product?.handle ?? params.targetHandle,
+        nextAssessmentAt: sub?.nextAssessmentAt ?? "",
+        nextProductName: params.targetHandle,
+      };
+    }
   },
 
   async listProducts(): Promise<ProductSummary[]> {

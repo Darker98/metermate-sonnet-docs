@@ -4,6 +4,7 @@ import UsageForm from "./components/client/UsageForm.js";
 import PlanChangeForm from "./components/client/PlanChangeForm.js";
 import LifecycleForm from "./components/client/LifecycleForm.js";
 import InvoiceForm from "./components/admin/InvoiceForm.js";
+import ActivityPanel from "./components/admin/ActivityPanel.js";
 
 type Role      = "client" | "admin";
 type ClientTab = "book" | "usage" | "plan-change" | "lifecycle";
@@ -18,7 +19,7 @@ const CLIENT_TABS: { id: ClientTab; label: string; available: boolean }[] = [
 
 const ADMIN_TABS: { id: AdminTab; label: string; available: boolean }[] = [
   { id: "invoice", label: "Issue Invoice", available: true  },
-  { id: "digest",  label: "Activity Digest", available: false },
+  { id: "digest",  label: "Activity Digest", available: true  },
 ];
 
 export default function App() {
@@ -133,6 +134,9 @@ export default function App() {
 
             {adminTab === "invoice" && (
               <InvoiceForm adminUser={adminUser} adminPassword={adminPassword} />
+            )}
+            {adminTab === "digest" && (
+              <ActivityPanel adminUser={adminUser} adminPassword={adminPassword} />
             )}
           </div>
         )}

@@ -226,3 +226,38 @@ export async function issueInvoice(payload: InvoicePayload): Promise<InvoiceResp
     Authorization: `Basic ${encoded}`,
   });
 }
+
+// ── UC6: Billing Activity Digest ─────────────────────────────────────────────
+
+export interface DigestPayload {
+  sessionId: string;
+  consultantId: string;
+  windowDays?: number;
+  adminUser: string;
+  adminPassword: string;
+}
+
+export type DigestStatus = "ok" | "maxio_failed" | "invalid" | "session_expired";
+
+export interface DigestResponse {
+  status: DigestStatus;
+  consultantId?: string;
+  windowDays?: number;
+  digestChannel?: string;
+  activeCount?: number;
+  totalMrrCents?: string;
+  newInWindow?: number;
+  churnInWindow?: number;
+  overdueInvoiceCount?: number;
+  overdueAmountDue?: string;
+  generatedAt?: string;
+  error?: string | Record<string, unknown>;
+}
+
+export async function triggerDigest(payload: DigestPayload): Promise<DigestResponse> {
+  const { adminUser, adminPassword, ...body } = payload;
+  const encoded = btoa(`${adminUser}:${adminPassword}`);
+  return post<DigestResponse>("/digest", body, {
+    Authorization: `Basic ${encoded}`,
+  });
+}

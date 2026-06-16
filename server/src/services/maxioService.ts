@@ -1,6 +1,7 @@
 import {
   SubscriptionsController,
   ProductsController,
+  SubscriptionComponentsController,
   CollectionMethod,
   ApiError,
 } from "@maxio-com/advanced-billing-sdk";
@@ -9,6 +10,7 @@ import { maxioClient } from "../maxioClient.js";
 
 const subscriptionsController = new SubscriptionsController(maxioClient);
 const productsController = new ProductsController(maxioClient);
+const subscriptionComponentsController = new SubscriptionComponentsController(maxioClient);
 
 export interface CreateSubscriptionParams {
   firstName: string;
@@ -75,7 +77,25 @@ export const maxioService = {
     try {
       response = await subscriptionsController.createSubscription(body);
     } catch (err) {
-      throw new Error(extractErrorMessage(err));
+      const msg = extractErrorMessage(err);
+      // Customer reference already exists → retry using the existing customer by reference
+      if (msg.toLowerCase().includes("must be unique") || msg.toLowerCase().includes("reference")) {
+        const retryBody: CreateSubscriptionRequest = {
+          subscription: {
+            productHandle: params.productHandle,
+            paymentCollectionMethod: body.subscription?.paymentCollectionMethod,
+            customerReference: params.email,
+            ...(params.couponCode ? { couponCode: params.couponCode } : {}),
+          },
+        };
+        try {
+          response = await subscriptionsController.createSubscription(retryBody);
+        } catch (retryErr) {
+          throw new Error(extractErrorMessage(retryErr));
+        }
+      } else {
+        throw new Error(msg);
+      }
     }
 
     const sub = response.result?.subscription;
@@ -94,6 +114,77 @@ export const maxioService = {
       customerName: [sub.customer?.firstName, sub.customer?.lastName]
         .filter(Boolean)
         .join(" ") || `${params.firstName} ${params.lastName}`,
+    };
+  },
+
+  async recordUsage(params: {
+    subscriptionId: number;
+    componentHandle: string;
+    quantity: number;
+    memo?: string;
+    timestamp?: string;
+  }): Promise<{ usageId: bigint; quantity: number; periodTotal: number; componentHandle: string }> {
+    const componentId = `handle:${params.componentHandle}`;
+
+    // Build memo — append timestamp note if supplied
+    const memoText = [
+      params.memo,
+      params.timestamp ? `at ${params.timestamp}` : undefined,
+    ]
+      .filter(Boolean)
+      .join(" — ") || undefined;
+
+    let recordedQty = params.quantity;
+    let usageId: bigint = BigInt(0);
+
+    try {
+      const createRes = await subscriptionComponentsController.createUsage(
+        params.subscriptionId,
+        componentId,
+        { usage: { quantity: params.quantity, memo: memoText } },
+      );
+      const u = createRes.result?.usage;
+      if (u) {
+        usageId = u.id ?? BigInt(0);
+        const raw = u.quantity;
+        recordedQty =
+          typeof raw === "number"
+            ? raw
+            : typeof raw === "string"
+            ? parseFloat(raw)
+            : params.quantity;
+      }
+    } catch (err) {
+      throw new Error(extractErrorMessage(err));
+    }
+
+    // Fetch period total (sum of all usage records for this component)
+    let periodTotal = 0;
+    try {
+      const listRes = await subscriptionComponentsController.listUsages({
+        subscriptionIdOrReference: params.subscriptionId,
+        componentId,
+      });
+      periodTotal = (listRes.result ?? []).reduce((sum, u) => {
+        const raw = u.quantity;
+        const qty =
+          typeof raw === "number"
+            ? raw
+            : typeof raw === "string"
+            ? parseFloat(raw)
+            : 0;
+        return sum + (isNaN(qty) ? 0 : qty);
+      }, 0);
+    } catch {
+      // Non-fatal — use the recorded quantity as a floor
+      periodTotal = recordedQty;
+    }
+
+    return {
+      usageId,
+      quantity: recordedQty,
+      periodTotal,
+      componentHandle: params.componentHandle,
     };
   },
 

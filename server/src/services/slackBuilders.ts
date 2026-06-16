@@ -71,6 +71,46 @@ export function buildSubscriptionCompleteBlocks(result: {
   ];
 }
 
+// ── UC2 ─────────────────────────────────────────────────────────────────────
+
+export function buildUsageProgressBlocks(componentHandle: string, quantity: number): Block[] {
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `:bar_chart: Recording *${quantity}* unit(s) of *${componentHandle}*…`,
+      },
+    },
+  ];
+}
+
+export function buildUsageCompleteBlocks(result: {
+  componentHandle: string;
+  quantity: number;
+  periodTotal: number;
+  memo?: string;
+}): Block[] {
+  return [
+    {
+      type: "header",
+      text: { type: "plain_text", text: ":white_check_mark: Usage recorded", emoji: true },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Component:*\n${result.componentHandle}` },
+        { type: "mrkdwn", text: `*Quantity:*\n${result.quantity}` },
+        { type: "mrkdwn", text: `*Period Total:*\n${result.periodTotal}` },
+        { type: "mrkdwn", text: `*Billing:*\nAccrues to next invoice` },
+        ...(result.memo
+          ? [{ type: "mrkdwn", text: `*Memo:*\n${result.memo}` }]
+          : []),
+      ],
+    },
+  ];
+}
+
 export function buildFailureBlocks(ucLabel: string, errorSummary: string): Block[] {
   return [
     {

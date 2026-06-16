@@ -54,18 +54,52 @@ export const slackService = {
     const existing = transactionStore.getChannel(txn.consultantId, txn.clientEmail);
     if (existing) return existing;
 
-    // Create the private channel
-    const name = buildChannelName(txn.consultantId, txn.clientEmail, ++channelSeq);
-    const created = await slack.conversations.create({
-      name,
-      is_private: true,
-    });
+    // Create the private channel — retry with incremented seq on name_taken
+    let channelId: string | undefined;
+    let channelName: string = "";
 
-    const channelId = created.channel?.id;
-    const channelName = created.channel?.name ?? name;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const name = buildChannelName(txn.consultantId, txn.clientEmail, ++channelSeq);
+      try {
+        const created = await slack.conversations.create({ name, is_private: true });
+        channelId = created.channel?.id;
+        channelName = created.channel?.name ?? name;
+        break;
+      } catch (err: unknown) {
+        const slackErr = err as { data?: { error?: string } };
+        if (slackErr?.data?.error === "name_taken") {
+          // Try to find the existing channel by name via conversations.list (requires groups:read)
+          try {
+            let cursor: string | undefined;
+            outer: do {
+              const list = await slack.conversations.list({
+                types: "private_channel",
+                limit: 200,
+                ...(cursor ? { cursor } : {}),
+              });
+              for (const ch of list.channels ?? []) {
+                if (ch.name === name) {
+                  channelId = ch.id;
+                  channelName = ch.name ?? name;
+                  console.info(`[slack] Reusing existing channel ${channelName} (${channelId})`);
+                  break outer;
+                }
+              }
+              cursor = list.response_metadata?.next_cursor ?? undefined;
+            } while (cursor);
+          } catch {
+            // groups:read not available — continue to next seq attempt
+          }
+          if (channelId) break;
+          // name_taken and couldn't look it up → try next seq number
+          continue;
+        }
+        throw err; // any other Slack error is fatal
+      }
+    }
 
     if (!channelId) {
-      throw new Error("Slack channel creation returned no channel ID");
+      throw new Error("Could not create or find a Slack channel after multiple attempts");
     }
 
     // Tier 1 invite: consultant

@@ -170,6 +170,54 @@ export function buildPlanChangeCompleteBlocks(result: {
   ];
 }
 
+// ── UC6 ─────────────────────────────────────────────────────────────────────
+
+export function buildDigestBlocks(result: {
+  consultantId: string;
+  windowDays: number;
+  activeCount: number;
+  totalMrrCents: bigint;
+  newInWindow: number;
+  churnInWindow: number;
+  overdueInvoiceCount: number;
+  overdueAmountDue: string;
+  generatedAt: string;
+}): Block[] {
+  const mrrDollars = (Number(result.totalMrrCents) / 100).toFixed(2);
+  return [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: ":chart_with_upwards_trend: Billing digest",
+        emoji: true,
+      },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Consultant:*\n${result.consultantId}` },
+        { type: "mrkdwn", text: `*Window:*\nLast ${result.windowDays} days` },
+        { type: "mrkdwn", text: `*Active Subscriptions:*\n${result.activeCount}` },
+        { type: "mrkdwn", text: `*Total MRR:*\n$${mrrDollars}/mo` },
+        { type: "mrkdwn", text: `*New Signups:*\n${result.newInWindow}` },
+        { type: "mrkdwn", text: `*Churn:*\n${result.churnInWindow}` },
+        { type: "mrkdwn", text: `*Overdue Invoices:*\n${result.overdueInvoiceCount}` },
+        { type: "mrkdwn", text: `*Overdue Amount:*\n$${result.overdueAmountDue}` },
+      ],
+    },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `_Reporting data may lag live state slightly. Generated ${result.generatedAt}._`,
+        },
+      ],
+    },
+  ];
+}
+
 // ── UC5 ─────────────────────────────────────────────────────────────────────
 
 export function buildInvoiceIssuedBlocks(result: {

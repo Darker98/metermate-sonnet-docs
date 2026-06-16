@@ -80,6 +80,12 @@ export const transactionStore = {
     channelMap.set(channelKey(consultantId, clientEmail), { channelId, channelName });
   },
 
+  getByConsultant(consultantId: ConsultantId): Transaction[] {
+    return Array.from(txnStore.values()).filter(
+      (t) => t.consultantId === consultantId && t.subscriptionId != null,
+    );
+  },
+
   size(): number {
     return txnStore.size;
   },

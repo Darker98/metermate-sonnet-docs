@@ -7,6 +7,7 @@ import {
   InvoicesController,
   CollectionMethod,
   CreateInvoiceStatus,
+  InvoiceStatus,
   ApiError,
 } from "@maxio-com/advanced-billing-sdk";
 import type { CreateSubscriptionRequest } from "@maxio-com/advanced-billing-sdk";
@@ -406,6 +407,83 @@ export const maxioService = {
       state: sub?.state ?? "unknown",
       canceledAt: sub?.canceledAt ?? null,
       resumesAt: sub?.resumesAt ?? null,
+    };
+  },
+
+  async buildDigest(params: {
+    subscriptionIds: number[];
+    windowDays: number;
+  }): Promise<{
+    activeCount: number;
+    totalMrrCents: bigint;
+    newInWindow: number;
+    churnInWindow: number;
+    overdueInvoiceCount: number;
+    overdueAmountDue: string;
+  }> {
+    const idSet = new Set(params.subscriptionIds);
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() - params.windowDays);
+    const windowStartStr = windowStart.toISOString().slice(0, 10); // YYYY-MM-DD
+
+    // Fetch all subscriptions (up to 200) and filter to this consultant's set
+    let allSubs: { id?: number; state?: string; productPriceInCents?: bigint; createdAt?: string; canceledAt?: string | null }[] = [];
+    try {
+      const res = await subscriptionsController.listSubscriptions({ perPage: 200 });
+      allSubs = (res.result ?? []).map((sr) => ({
+        id: sr.subscription?.id,
+        state: sr.subscription?.state,
+        productPriceInCents: sr.subscription?.productPriceInCents,
+        createdAt: sr.subscription?.createdAt,
+        canceledAt: sr.subscription?.canceledAt,
+      })).filter((s) => s.id != null && (idSet.size === 0 || idSet.has(s.id!)));
+    } catch {
+      // Non-fatal — return zeros on Maxio failure
+    }
+
+    const active = allSubs.filter((s) => s.state === "active");
+    const totalMrrCents = active.reduce(
+      (sum, s) => sum + (s.productPriceInCents ?? BigInt(0)),
+      BigInt(0),
+    );
+
+    const newInWindow = allSubs.filter((s) => {
+      if (!s.createdAt) return false;
+      return new Date(s.createdAt) >= windowStart;
+    }).length;
+
+    const churnInWindow = allSubs.filter((s) => {
+      if (!s.canceledAt) return false;
+      return new Date(s.canceledAt) >= windowStart;
+    }).length;
+
+    // Fetch open invoices for overdue count
+    let overdueInvoiceCount = 0;
+    let overdueAmountDue = "0.00";
+    try {
+      const invRes = await invoicesController.listInvoices({
+        status: InvoiceStatus.Open,
+        perPage: 200,
+      });
+      const invoices = ((invRes.result as { invoices?: { subscriptionId?: number; dueAmount?: string }[] })?.invoices ?? []).filter((inv) =>
+        idSet.size === 0 || (inv.subscriptionId != null && idSet.has(inv.subscriptionId)),
+      );
+      overdueInvoiceCount = invoices.length;
+      const totalOverdue = invoices.reduce((sum, inv) => {
+        return sum + parseFloat(inv.dueAmount ?? "0");
+      }, 0);
+      overdueAmountDue = totalOverdue.toFixed(2);
+    } catch {
+      // Non-fatal
+    }
+
+    return {
+      activeCount: active.length,
+      totalMrrCents,
+      newInWindow,
+      churnInWindow,
+      overdueInvoiceCount,
+      overdueAmountDue,
     };
   },
 

@@ -4,7 +4,9 @@ import {
   SubscriptionComponentsController,
   SubscriptionProductsController,
   SubscriptionStatusController,
+  InvoicesController,
   CollectionMethod,
+  CreateInvoiceStatus,
   ApiError,
 } from "@maxio-com/advanced-billing-sdk";
 import type { CreateSubscriptionRequest } from "@maxio-com/advanced-billing-sdk";
@@ -15,6 +17,7 @@ const productsController = new ProductsController(maxioClient);
 const subscriptionComponentsController = new SubscriptionComponentsController(maxioClient);
 const subscriptionProductsController = new SubscriptionProductsController(maxioClient);
 const subscriptionStatusController = new SubscriptionStatusController(maxioClient);
+const invoicesController = new InvoicesController(maxioClient);
 
 export interface CreateSubscriptionParams {
   firstName: string;
@@ -279,6 +282,80 @@ export const maxioService = {
         nextProductName: params.targetHandle,
       };
     }
+  },
+
+  async createAndIssueInvoice(params: {
+    subscriptionId: number;
+    clientEmail: string;
+    lineItems?: { title: string; quantity: string; unitPrice: string; description?: string }[];
+    memo?: string;
+    sendEmail: boolean;
+  }): Promise<{
+    uid: string;
+    invoiceNumber: string;
+    status: string;
+    totalAmount: string;
+    dueAmount: string;
+    dueDate: string;
+    publicUrl: string | null;
+    emailSent: boolean;
+  }> {
+    // Create invoice with status "open" — issues it immediately in one step
+    let createResponse;
+    try {
+      createResponse = await invoicesController.createInvoice(
+        params.subscriptionId,
+        {
+          invoice: {
+            status: CreateInvoiceStatus.Open,
+            ...(params.lineItems && params.lineItems.length > 0
+              ? {
+                  lineItems: params.lineItems.map((item) => ({
+                    title: item.title,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    ...(item.description ? { description: item.description } : {}),
+                  })),
+                }
+              : {}),
+            ...(params.memo ? { memo: params.memo } : {}),
+          },
+        },
+      );
+    } catch (err) {
+      throw new Error(extractErrorMessage(err));
+    }
+
+    const issuedInvoice = createResponse.result?.invoice;
+    if (!issuedInvoice?.uid) {
+      throw new Error("Maxio returned no invoice uid after create");
+    }
+
+    const uid = issuedInvoice.uid;
+
+    // Optionally send email to client
+    let emailSent = false;
+    if (params.sendEmail) {
+      try {
+        await invoicesController.sendInvoice(uid, {
+          recipientEmails: [params.clientEmail],
+        });
+        emailSent = true;
+      } catch {
+        // Non-fatal — invoice is still issued
+      }
+    }
+
+    return {
+      uid,
+      invoiceNumber: issuedInvoice?.number ?? uid,
+      status: issuedInvoice?.status ?? "open",
+      totalAmount: issuedInvoice?.totalAmount ?? "0.00",
+      dueAmount: issuedInvoice?.dueAmount ?? "0.00",
+      dueDate: issuedInvoice?.dueDate ?? "",
+      publicUrl: issuedInvoice?.publicUrl ?? null,
+      emailSent,
+    };
   },
 
   async lifecycleAction(params: {

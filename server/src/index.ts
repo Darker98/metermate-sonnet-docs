@@ -6,6 +6,7 @@ import { bookRouter } from "./routes/book.js";
 import { usageRouter } from "./routes/usage.js";
 import { planChangeRouter } from "./routes/planChange.js";
 import { lifecycleRouter } from "./routes/lifecycle.js";
+import { invoicesRouter } from "./routes/invoices.js";
 
 const app = express();
 
@@ -17,6 +18,7 @@ app.use(bookRouter);
 app.use(usageRouter);
 app.use(planChangeRouter);
 app.use(lifecycleRouter);
+app.use(invoicesRouter);
 
 app.listen(config.port, async () => {
   console.log(`[metermate] server listening on http://localhost:${config.port}`);

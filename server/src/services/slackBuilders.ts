@@ -170,6 +170,52 @@ export function buildPlanChangeCompleteBlocks(result: {
   ];
 }
 
+// ── UC5 ─────────────────────────────────────────────────────────────────────
+
+export function buildInvoiceIssuedBlocks(result: {
+  invoiceNumber: string;
+  status: string;
+  totalAmount: string;
+  dueAmount: string;
+  dueDate: string;
+  publicUrl: string | null;
+  emailSent: boolean;
+}): Block[] {
+  const blocks: Block[] = [
+    {
+      type: "header",
+      text: { type: "plain_text", text: ":receipt: Invoice issued", emoji: true },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Invoice #:*\n${result.invoiceNumber}` },
+        { type: "mrkdwn", text: `*Status:*\n${result.status}` },
+        { type: "mrkdwn", text: `*Total:*\n$${result.totalAmount}` },
+        { type: "mrkdwn", text: `*Amount Due:*\n$${result.dueAmount}` },
+        { type: "mrkdwn", text: `*Due Date:*\n${result.dueDate}` },
+        { type: "mrkdwn", text: `*Email Sent:*\n${result.emailSent ? "Yes" : "No"}` },
+      ],
+    },
+  ];
+
+  if (result.publicUrl) {
+    blocks.push({
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: { type: "plain_text", text: "Pay Invoice", emoji: true },
+          style: "primary",
+          url: result.publicUrl,
+        },
+      ],
+    });
+  }
+
+  return blocks;
+}
+
 // ── UC4 ─────────────────────────────────────────────────────────────────────
 
 export function buildLifecycleCompleteBlocks(result: {

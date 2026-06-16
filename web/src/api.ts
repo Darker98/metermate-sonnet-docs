@@ -101,3 +101,52 @@ export interface UsageResponse {
 export async function reportUsage(payload: UsagePayload): Promise<UsageResponse> {
   return post<UsageResponse>("/usage", payload);
 }
+
+// ── UC3: Plan Change ─────────────────────────────────────────────────────────
+
+export interface PlanChangePayload {
+  sessionId: string;
+  txnRef: string;
+  targetHandle: string;
+  timing: "prorate" | "at-renewal";
+}
+
+export type PlanChangeStatus = "ok" | "maxio_failed" | "invalid" | "session_expired";
+
+export interface PlanChangePreviewResponse {
+  status: PlanChangeStatus;
+  txnId?: string;
+  channelId?: string;
+  channelName?: string;
+  fromPlan?: string;
+  toPlan?: string;
+  timing?: string;
+  proratedAdjustmentInCents?: string;
+  chargeInCents?: string;
+  paymentDueInCents?: string;
+  creditAppliedInCents?: string;
+  error?: string | Record<string, unknown>;
+}
+
+export interface PlanChangeResponse {
+  status: PlanChangeStatus;
+  txnId?: string;
+  channelId?: string;
+  channelName?: string;
+  fromPlan?: string;
+  toPlan?: string;
+  toPlanHandle?: string;
+  timing?: string;
+  effectiveDate?: string;
+  state?: string;
+  nextAssessmentAt?: string;
+  error?: string | Record<string, unknown>;
+}
+
+export async function previewPlanChange(payload: PlanChangePayload): Promise<PlanChangePreviewResponse> {
+  return post<PlanChangePreviewResponse>("/plan-change/preview", payload);
+}
+
+export async function applyPlanChange(payload: PlanChangePayload): Promise<PlanChangeResponse> {
+  return post<PlanChangeResponse>("/plan-change", payload);
+}

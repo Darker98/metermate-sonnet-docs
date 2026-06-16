@@ -1,6 +1,7 @@
 import { useState } from "react";
 import BookForm from "./components/client/BookForm.js";
 import UsageForm from "./components/client/UsageForm.js";
+import PlanChangeForm from "./components/client/PlanChangeForm.js";
 
 type Role      = "client" | "admin";
 type ClientTab = "book" | "usage" | "plan-change" | "lifecycle";
@@ -8,7 +9,7 @@ type ClientTab = "book" | "usage" | "plan-change" | "lifecycle";
 const CLIENT_TABS: { id: ClientTab; label: string; available: boolean }[] = [
   { id: "book",        label: "Book & Subscribe",  available: true  },
   { id: "usage",       label: "Report Usage",       available: true  },
-  { id: "plan-change", label: "Plan Change",        available: false },
+  { id: "plan-change", label: "Plan Change",        available: true  },
   { id: "lifecycle",   label: "Lifecycle",          available: false },
 ];
 
@@ -59,8 +60,9 @@ export default function App() {
               ))}
             </nav>
 
-            {clientTab === "book"  && <BookForm />}
-            {clientTab === "usage" && <UsageForm />}
+            {clientTab === "book"        && <BookForm />}
+            {clientTab === "usage"       && <UsageForm />}
+            {clientTab === "plan-change" && <PlanChangeForm />}
           </div>
         )}
 

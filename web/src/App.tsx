@@ -2,6 +2,7 @@ import { useState } from "react";
 import BookForm from "./components/client/BookForm.js";
 import UsageForm from "./components/client/UsageForm.js";
 import PlanChangeForm from "./components/client/PlanChangeForm.js";
+import LifecycleForm from "./components/client/LifecycleForm.js";
 
 type Role      = "client" | "admin";
 type ClientTab = "book" | "usage" | "plan-change" | "lifecycle";
@@ -10,7 +11,7 @@ const CLIENT_TABS: { id: ClientTab; label: string; available: boolean }[] = [
   { id: "book",        label: "Book & Subscribe",  available: true  },
   { id: "usage",       label: "Report Usage",       available: true  },
   { id: "plan-change", label: "Plan Change",        available: true  },
-  { id: "lifecycle",   label: "Lifecycle",          available: false },
+  { id: "lifecycle",   label: "Lifecycle",          available: true  },
 ];
 
 export default function App() {
@@ -63,6 +64,7 @@ export default function App() {
             {clientTab === "book"        && <BookForm />}
             {clientTab === "usage"       && <UsageForm />}
             {clientTab === "plan-change" && <PlanChangeForm />}
+            {clientTab === "lifecycle"   && <LifecycleForm />}
           </div>
         )}
 

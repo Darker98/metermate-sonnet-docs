@@ -3,6 +3,7 @@ import {
   ProductsController,
   SubscriptionComponentsController,
   SubscriptionProductsController,
+  SubscriptionStatusController,
   CollectionMethod,
   ApiError,
 } from "@maxio-com/advanced-billing-sdk";
@@ -13,6 +14,7 @@ const subscriptionsController = new SubscriptionsController(maxioClient);
 const productsController = new ProductsController(maxioClient);
 const subscriptionComponentsController = new SubscriptionComponentsController(maxioClient);
 const subscriptionProductsController = new SubscriptionProductsController(maxioClient);
+const subscriptionStatusController = new SubscriptionStatusController(maxioClient);
 
 export interface CreateSubscriptionParams {
   firstName: string;
@@ -277,6 +279,57 @@ export const maxioService = {
         nextProductName: params.targetHandle,
       };
     }
+  },
+
+  async lifecycleAction(params: {
+    subscriptionId: number;
+    action: "pause" | "resume" | "cancel" | "reactivate";
+    cancelType?: "immediate" | "end-of-period";
+    reasonCode?: string;
+  }): Promise<{ state: string; canceledAt: string | null; resumesAt: string | null }> {
+    let response;
+    try {
+      switch (params.action) {
+        case "pause":
+          response = await subscriptionStatusController.pauseSubscription(
+            params.subscriptionId,
+            {},
+          );
+          break;
+        case "resume":
+          response = await subscriptionStatusController.resumeSubscription(
+            params.subscriptionId,
+            undefined,
+          );
+          break;
+        case "cancel":
+          response = await subscriptionStatusController.cancelSubscription(
+            params.subscriptionId,
+            {
+              subscription: {
+                cancelAtEndOfPeriod: params.cancelType === "end-of-period",
+                ...(params.reasonCode ? { reasonCode: params.reasonCode } : {}),
+              },
+            },
+          );
+          break;
+        case "reactivate":
+          response = await subscriptionStatusController.reactivateSubscription(
+            params.subscriptionId,
+            {},
+          );
+          break;
+      }
+    } catch (err) {
+      throw new Error(extractErrorMessage(err));
+    }
+
+    const sub = (response as { result?: { subscription?: { state?: string; canceledAt?: string | null; resumesAt?: string | null } } })?.result?.subscription;
+    return {
+      state: sub?.state ?? "unknown",
+      canceledAt: sub?.canceledAt ?? null,
+      resumesAt: sub?.resumesAt ?? null,
+    };
   },
 
   async listProducts(): Promise<ProductSummary[]> {

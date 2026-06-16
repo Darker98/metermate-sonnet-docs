@@ -150,3 +150,34 @@ export async function previewPlanChange(payload: PlanChangePayload): Promise<Pla
 export async function applyPlanChange(payload: PlanChangePayload): Promise<PlanChangeResponse> {
   return post<PlanChangeResponse>("/plan-change", payload);
 }
+
+// ── UC4: Lifecycle ───────────────────────────────────────────────────────────
+
+export interface LifecyclePayload {
+  sessionId: string;
+  txnRef: string;
+  action: "pause" | "resume" | "cancel" | "reactivate";
+  cancelType?: "immediate" | "end-of-period";
+  reasonCode?: string;
+}
+
+export type LifecycleStatus = "ok" | "maxio_failed" | "invalid" | "session_expired";
+
+export interface LifecycleResponse {
+  status: LifecycleStatus;
+  txnId?: string;
+  channelId?: string;
+  channelName?: string;
+  action?: string;
+  cancelType?: string;
+  fromState?: string;
+  toState?: string;
+  effectiveDate?: string;
+  canceledAt?: string | null;
+  resumesAt?: string | null;
+  error?: string | Record<string, unknown>;
+}
+
+export async function triggerLifecycle(payload: LifecyclePayload): Promise<LifecycleResponse> {
+  return post<LifecycleResponse>("/lifecycle", payload);
+}

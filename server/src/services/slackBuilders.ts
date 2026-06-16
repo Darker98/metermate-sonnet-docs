@@ -170,6 +170,39 @@ export function buildPlanChangeCompleteBlocks(result: {
   ];
 }
 
+// ── UC4 ─────────────────────────────────────────────────────────────────────
+
+export function buildLifecycleCompleteBlocks(result: {
+  action: string;
+  fromState: string;
+  toState: string;
+  reasonCode?: string;
+  effectiveDate: string;
+}): Block[] {
+  return [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `:vertical_traffic_light: ${result.fromState} → ${result.toState}`,
+        emoji: true,
+      },
+    },
+    {
+      type: "section",
+      fields: [
+        { type: "mrkdwn", text: `*Action:*\n${result.action}` },
+        { type: "mrkdwn", text: `*Previous State:*\n${result.fromState}` },
+        { type: "mrkdwn", text: `*New State:*\n${result.toState}` },
+        { type: "mrkdwn", text: `*Effective:*\n${result.effectiveDate}` },
+        ...(result.reasonCode
+          ? [{ type: "mrkdwn", text: `*Reason:*\n${result.reasonCode}` }]
+          : []),
+      ],
+    },
+  ];
+}
+
 export function buildFailureBlocks(ucLabel: string, errorSummary: string): Block[] {
   return [
     {
